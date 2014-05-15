@@ -24,3 +24,48 @@ html, body, .container, .container-fluid, .content {
     position: relative;
     height: 50px;
 }
+
+textarea {
+	width: 926px;
+	height:504px;
+/*	padding: 0 20px;*/
+	margin: 20px 0 0;
+}
+.icon-remove {
+    float: right;
+		cursor:pointer;
+}
+
+.log-result {
+    background-color: #F5F5F5;
+    border-radius: 5px;
+    border-width: 1px;
+    clear: both;
+    margin: 19px 0;
+    padding: 10px;
+}
+
+.results-wrapper {
+/*    background-color: #F5F5F5;*/
+    border: 1px solid #E3E3E3;
+    border-radius: 4px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05) inset;
+    margin-bottom: 0;
+    min-height: 20px;
+    padding: 0 19px;
+}
+
+pre {
+	background-color: white;
+	border:none;
+}
+
+.log-msg {
+    display: block;
+    color:green;
+    padding-bottom: 8px;
+}
+
+.readmore-js-toggle {
+    padding: 10px 0 0 14px;
+}

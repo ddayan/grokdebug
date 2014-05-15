@@ -146,6 +146,14 @@ class Application < Sinatra::Base
     haml :'index'
   end
   
+  get '/multi' do
+    @tags = []
+    grok.patterns.each do |x,y|
+        @tags << "%{#{x}"
+    end
+    haml :'multi'
+  end
+  
   get '/discover' do
     haml :'discover'
   end
