@@ -1,0 +1,168 @@
+.container
+	.content
+		.wrapper
+			.proper-content				
+				REGEX BUILDER
+				%form{ :action => "#", :id => "grok-form" }
+					%textarea{ :id=> 'logs-input', :rows => "4", :cols => "50" }
+					.ui-widget
+						%input{ :type => "text", :class => "span12", :placeholder => "Pattern", :id => "tags" }
+					%lable{ :class => "checkbox inline",}
+						%input{ :id => "add_custom_patterns", :type => "checkbox", :value= => "" }
+							Add custom patterns
+					%lable{ :class => "checkbox inline",}
+						%input{ :id => "keep_empty_captures", :type => "checkbox", :value= => "" }
+							Keep Empty Captures
+					%label{ :class => "checkbox inline" }
+						%input{ :id => "named_captures_only", :type => "checkbox", :value => "" }
+							Named Captures Only
+					%label{ :class => "checkbox inline" }
+						%input{ :id => "singles", :type => "checkbox", :value => "" }
+							Singles
+					%label{ :class => "checkbox inline pull-right" }
+						%input{ :id => "autocomplete", :type => "checkbox", :value => "" }
+							Autocomplete
+				%button{:id => 'match-button'}
+					Match
+				%button{:id => 'new-input-button'}
+					New Input
+				%div{:id => "custom_patterns_container", :style=>"display:none;"}
+					%p
+						One per line, the syntax for a grok pattern is <code>%{SYNTAX:SEMANTIC}</code>
+					%textarea{ :class => "span12", :placeholder => "Custom patterns", :id => "custom_patterns", }									
+				%div{ :class => "results-wrapper" }
+					%pre{ :id => "log-results" }
+			.push
+		.footer-wrapper
+			%footer
+				%div=haml :footer
+
+%script{ :type => "text/javascript", :src =>"//ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"}
+%script{ :type => "text/javascript", :src => "//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.2/js/bootstrap.min.js" }
+%script{ :type => "text/javascript", :src => "//ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js" }
+%script{ :type => "text/javascript", :src => "readmore.min.js" }
+:javascript
+	
+	var mode = 1;
+
+	var match = function() {
+	
+	
+	
+		var custom_patterns = $('#custom_patterns').val();		
+		//		var input = $('#input').val();
+		var pattern = $('#tags').val();
+		var named_captures_only = $('#named_captures_only').is(':checked');
+		var keep_empty_captures = $('#keep_empty_captures').is(':checked');
+		var singles = $('#singles').is(':checked');
+		
+		var logs = [];
+		if (mode == 1) { //get logs from input textbox
+			$('#logs-input').hide();
+			mode = 2;
+			logs = $('#logs-input').val().split('\n');
+		} else if (mode == 2) { // take remaining logs from the match results box.
+			logs = [];
+			$('.log-msg').each(function() {
+				logs.push($(this).text());
+			});
+		}
+		$('#log-results').html('');
+		$.each(logs, function(i, input) {
+			$.post('/grok',
+				{
+				  "custom_patterns":custom_patterns,
+					"input":input,
+					"pattern":pattern,
+					"named_captures_only":named_captures_only,
+					"keep_empty_captures":keep_empty_captures,
+					"singles":singles
+				}, function(data){
+				var logResult = $("<div class='log-result'></div>").appendTo($('#log-results')).prepend('<i class="icon-remove"></i>');
+				var matchDetails = $("<div class='match-details'></div>").appendTo(logResult).html(data).prepend("<span class='log-msg'>" + input + "</span>");
+				matchDetails.readmore({
+					moreLink: '<a href="#">More</a>',
+					lessLink: '<a href="#">Less</a>'
+				});
+				$(".icon-remove", logResult).click(function(){
+					logResult.remove();
+				});
+				
+			});
+			
+			
+		});
+		
+
+	};
+
+	$("#add_custom_patterns").click(function(){
+		$( "#custom_patterns_container" ).toggle(function() {
+			$( "#custom_patterns" ).val("")
+		})
+	})
+	$("#match-button").click(function(){
+		 match();
+	})
+	$("#new-input-button").click(function(){
+		 mode = 1;
+		 $('#log-results').html('');
+		 $('#logs-input').show();
+	})
+	
+	$("#autocomplete").click(function(){
+		var autocomplete = $('#autocomplete').is(':checked');
+		$( "#tags" ).autocomplete({ disabled: !autocomplete });
+	});
+	$("#grok-form").submit(match);
+
+	var availableTags = #{@tags};
+
+	function split( val ) {
+	    return val.split( /}\s*/ );
+	}
+	function extractLast( term ) {
+	    return split( term ).pop();
+	}
+
+	$( "#tags" )
+	   	// don't navigate away from the field on tab when selecting an item
+	    .bind( "keydown", function( event ) {
+	        if ( event.keyCode === $.ui.keyCode.TAB &&
+	                $( this ).data( "autocomplete" ).menu.active ) {
+	            event.preventDefault();
+	        }
+	    })
+	    .autocomplete({
+	        minLength: 3,
+	        disabled: true,
+	        source: function( request, response ) {
+	        	$.each($( "#custom_patterns" ).val().split('\n'), function(){
+					var line_splitted = this.replace(/^\s*/, "").split(/\s+/)
+					var name = line_splitted[0]
+					if ( $.inArray(name, availableTags) == -1 ) {
+						availableTags.push("%{" + name)
+					}
+				});
+
+	            // delegate back to autocomplete, but extract the last term
+	            response( $.ui.autocomplete.filter(
+	                availableTags, extractLast( request.term ) ) );
+	        },
+	        focus: function() {
+	            // prevent value inserted on focus
+	            return false;
+	        },
+	        select: function( event, ui ) {
+	            var terms = split( this.value );
+	            // remove the current input
+	            terms.pop();
+	            // add the selected item
+	            terms.push( ui.item.value );
+	            // add placeholder to get the comma-and-space at the end
+	            terms.push( "" );
+	            this.value = terms.join( "}" );
+	            return false;
+	        }
+	    })
+			
